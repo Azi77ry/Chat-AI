@@ -2,7 +2,7 @@
 
 A voice-enabled AI chatbot powered by DeepInfra's LLMs (Llama 3, Mixtral) with Flask backend and modern web interface.
 
-![Demo Screenshot](https://via.placeholder.com/800x500/6e48aa/FFFFFF?text=Aziry+AI+Chatbot) *(Replace with actual screenshot)*
+![Demo Screenshot](https://via.placeholder.com/800x500/6e48aa/FFFFFF?text=Aziry+AI+Chatbot) 
 
 ## Features ✨
 - 💬 Text chat with cutting-edge LLMs (Llama 3 70B/8B, Mixtral)
