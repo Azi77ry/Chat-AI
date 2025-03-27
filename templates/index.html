@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aziry AI Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6e48aa;
+            --secondary: #9d50bb;
+            --accent: #4776E6;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --success: #4CAF50;
+            --error: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #4776E6, #8E54E9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(142, 84, 233, 0.3);
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 300;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.3s ease;
+            max-width: 80%;
+        }
+
+        .user-message {
+            margin-left: auto;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 18px 18px 0 18px;
+            box-shadow: 0 4px 15px rgba(110, 72, 170, 0.3);
+        }
+
+        .ai-message {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 18px 18px 18px 0;
+            position: relative;
+        }
+
+        .ai-message::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            clip-path: polygon(100% 0, 0 0, 100% 100%);
+        }
+
+        .message-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .message-time {
+            margin-left: auto;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #user-input:focus {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent), #6E48AA);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0 1.5rem;
+            margin-left: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(71, 118, 230, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(71, 118, 230, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-voice {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF416C, #FF4B2B);
+        }
+
+        .btn-voice.recording {
+            animation: pulse 1.5s infinite;
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 2px;
+            opacity: 0.4;
+            animation: typingAnimation 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 75, 43, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .btn-text {
+                display: none;
+            }
+            
+            .btn-voice {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Aziry CHAT-AI</h1>
+            <p class="subtitle">Welcome let us Grow Together with Aziry AI</p>
+        </header>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+                <button class="btn btn-send" id="send-btn">
+                    <span class="btn-text">Send</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+                <button class="btn btn-voice" id="voice-btn" title="Voice Input">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const voiceBtn = document.getElementById('voice-btn');
+            
+            let isRecording = false;
+            let mediaRecorder;
+            let audioChunks = [];
+            
+            // Add a message to the chat
+            function addMessage(role, content, isTyping = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}-message`;
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'message-info';
+                
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'message-time';
+                timeSpan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                if (role === 'ai') {
+                    infoDiv.innerHTML = `<span>Aziry-AI Assistant </span>`;
+                } else {
+                    infoDiv.innerHTML = '<span>You</span>';
+                }
+                
+                infoDiv.appendChild(timeSpan);
+                messageDiv.appendChild(infoDiv);
+                
+                if (isTyping) {
+                    const typingDiv = document.createElement('div');
+                    typingDiv.className = 'typing-indicator';
+                    typingDiv.innerHTML = `
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    `;
+                    messageDiv.appendChild(typingDiv);
+                } else {
+                    const contentDiv = document.createElement('div');
+                    contentDiv.textContent = content;
+                    messageDiv.appendChild(contentDiv);
+                }
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return messageDiv;
+            }
+            
+            // Send message to server
+            async function sendMessage() {
+                const message = userInput.value.trim();
+                if (!message) return;
+                
+                // Add user message
+                addMessage('user', message);
+                userInput.value = '';
+                
+                // Show typing indicator
+                const typingMessage = addMessage('ai', '', true);
+                
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Remove typing indicator
+                    chatMessages.removeChild(typingMessage);
+                    
+                    // Add AI response
+                    if (data.response) {
+                        addMessage('ai', data.response);
+                    } else {
+                        addMessage('ai', "Sorry, I couldn't process your request.");
+                    }
+                } catch (error) {
+                    chatMessages.removeChild(typingMessage);
+                    addMessage('ai', "Connection error. Please try again.");
+                    console.error('Error:', error);
+                }
+            }
+            
+            // Voice recording
+            async function toggleRecording() {
+                if (!isRecording) {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        
+                        mediaRecorder.ondataavailable = event => {
+                            audioChunks.push(event.data);
+                        };
+                        
+                        mediaRecorder.onstop = async () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                            const formData = new FormData();
+                            formData.append('audio', audioBlob, 'recording.wav');
+                            
+                            // Show processing message
+                            const processingMessage = addMessage('ai', 'Processing your voice message...');
+                            
+                            try {
+                                const response = await fetch('/api/voice', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                
+                                const data = await response.json();
+                                chatMessages.removeChild(processingMessage);
+                                
+                                if (data.text_response) {
+                                    addMessage('user', data.user_input);
+                                    addMessage('ai', data.text_response);
+                                } else {
+                                    addMessage('ai', "Sorry, I couldn't understand your voice.");
+                                }
+                            } catch (error) {
+                                chatMessages.removeChild(processingMessage);
+                                addMessage('ai', "Voice processing failed. Please try again.");
+                                console.error('Error:', error);
+                            }
+                        };
+                        
+                        mediaRecorder.start();
+                        isRecording = true;
+                        voiceBtn.classList.add('recording');
+                    } catch (error) {
+                        console.error('Error accessing microphone:', error);
+                        addMessage('ai', "Microphone access denied. Please check permissions.");
+                    }
+                } else {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                    isRecording = false;
+                    voiceBtn.classList.remove('recording');
+                }
+            }
+            
+            // Event listeners
+            sendBtn.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+            voiceBtn.addEventListener('click', toggleRecording);
+            
+            // Initial greeting
+            setTimeout(() => {
+                addMessage('ai', "Hello! I'm your AI assistant. How can I help you today?");
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
