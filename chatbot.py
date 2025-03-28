@@ -2,25 +2,23 @@ import os
 from typing import List, Dict
 from dotenv import load_dotenv
 from openai import OpenAI
+import httpx  # Add this import at the top
 
 load_dotenv()
 
 class DeepInfraChatBot:
     def __init__(self, model: str = "meta-llama/Meta-Llama-3-8B-Instruct", max_history: int = 6):
-        """
-        Initialize the chatbot with DeepInfra backend
-        
-        Args:
-            model: DeepInfra model identifier
-            max_history: Maximum conversation history to retain
-        """
+        """Initialize the chatbot with DeepInfra backend"""
         self.client = OpenAI(
             base_url="https://api.deepinfra.com/v1/openai",
-            api_key=os.getenv("DEEPINFRA_API_KEY")
+            api_key=os.getenv("DEEPINFRA_API_KEY"),
+            timeout=httpx.Timeout(15.0)  # Explicit timeout
         )
         self.model = model
         self.max_history = max_history
         self.conversation_history: List[Dict] = []
+        
+        # ... [rest of your existing class code remains unchanged] ...
         
         # Supported models with their API names
         self.SUPPORTED_MODELS = {
