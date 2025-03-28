@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, g
 from chatbot import DeepInfraChatBot
 import speech_recognition as sr
 import os
 import time
+import sqlite3
+from pathlib import Path
 
 app = Flask(__name__)
 bot = DeepInfraChatBot()
@@ -11,6 +13,35 @@ bot = DeepInfraChatBot()
 recognizer = sr.Recognizer()
 recognizer.energy_threshold = 4000  # Adjust based on your microphone
 recognizer.dynamic_energy_threshold = True
+
+# Database setup
+DATABASE = 'visitors.db'
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+        # Create table if it doesn't exist
+        db.execute('''CREATE TABLE IF NOT EXISTS visitors
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    return db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+def count_visitor():
+    """Record a new visitor and return total count"""
+    db = get_db()
+    # Insert new visitor
+    db.execute("INSERT INTO visitors DEFAULT VALUES")
+    db.commit()
+    # Get total count
+    count = db.execute("SELECT COUNT(*) FROM visitors").fetchone()[0]
+    return count
 
 # System prompt configuration
 DEFAULT_SYSTEM_PROMPT = """You are a helpful AI assistant. Follow these guidelines:
@@ -24,7 +55,15 @@ bot._add_system_message(DEFAULT_SYSTEM_PROMPT)
 @app.route('/')
 def index():
     """Serve the chat interface"""
-    return render_template('index.html')
+    visitor_count = count_visitor()
+    return render_template('index.html', visitor_count=visitor_count)
+
+@app.route('/api/visitors', methods=['GET'])
+def get_visitors():
+    """Get current visitor count"""
+    db = get_db()
+    count = db.execute("SELECT COUNT(*) FROM visitors").fetchone()[0]
+    return jsonify({"count": count})
 
 @app.route('/api/chat', methods=['POST'])
 def handle_chat():
@@ -123,4 +162,6 @@ def favicon():
     return app.send_static_file('favicon.ico')
 
 if __name__ == '__main__':
+    # Ensure database exists
+    Path(DATABASE).touch()
     app.run(host='0.0.0.0', port=5000, debug=True)

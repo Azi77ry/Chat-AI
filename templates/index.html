@@ -263,6 +263,15 @@
                 height: 40px;
             }
         }
+        .visitor-counter {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -296,6 +305,9 @@
                 </button>
             </div>
         </div>
+    </div>
+    <div class="visitor-counter">
+        Total Visitors: <span id="visitor-count">0</span>
     </div>
 
     <script>
@@ -418,9 +430,9 @@
                                 const data = await response.json();
                                 chatMessages.removeChild(processingMessage);
                                 
-                                if (data.text_response) {
+                                if (data.user_input && data.response) {
                                     addMessage('user', data.user_input);
-                                    addMessage('ai', data.text_response);
+                                    addMessage('ai', data.response);
                                 } else {
                                     addMessage('ai', "Sorry, I couldn't understand your voice.");
                                 }
@@ -446,6 +458,17 @@
                 }
             }
             
+            // Update visitor count
+            async function updateVisitorCount() {
+                try {
+                    const response = await fetch('/api/visitors');
+                    const data = await response.json();
+                    document.getElementById('visitor-count').textContent = data.count;
+                } catch (error) {
+                    console.error('Error updating visitor count:', error);
+                }
+            }
+            
             // Event listeners
             sendBtn.addEventListener('click', sendMessage);
             userInput.addEventListener('keypress', (e) => {
@@ -457,6 +480,12 @@
             setTimeout(() => {
                 addMessage('ai', "Hello! I'm your AI assistant. How can I help you today?");
             }, 1000);
+
+            // Initial visitor count update
+            updateVisitorCount();
+            
+            // Update every 30 seconds
+            setInterval(updateVisitorCount, 30000);
         });
     </script>
 </body>
