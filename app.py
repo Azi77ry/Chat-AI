@@ -18,39 +18,23 @@ recognizer.dynamic_energy_threshold = True
 DATABASE = 'visitors.db'
 
 def init_db():
-    """Initialize database with correct schema"""
+    """Initialize database with simple counter"""
     with sqlite3.connect(DATABASE) as conn:
-        cursor = conn.cursor()
-        
-        # Check if table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='visitors'")
-        table_exists = cursor.fetchone()
-        
-        if not table_exists:
-            # Create fresh table with all columns
-            cursor.execute('''
-                CREATE TABLE visitors (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    ip_address TEXT
-                )
-            ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS visitor_count (
+                id INTEGER PRIMARY KEY,
+                count INTEGER DEFAULT 0
+            )
+        ''')
+        # Initialize counter if not exists
+        if conn.execute("SELECT 1 FROM visitor_count").fetchone() is None:
+            conn.execute("INSERT INTO visitor_count (count) VALUES (0)")
             conn.commit()
-        else:
-            # Check for missing columns
-            cursor.execute("PRAGMA table_info(visitors)")
-            columns = [column[1] for column in cursor.fetchall()]
-            
-            if 'ip_address' not in columns:
-                # Add missing column
-                cursor.execute("ALTER TABLE visitors ADD COLUMN ip_address TEXT")
-                conn.commit()
 
 def get_db():
-    """Get database connection with proper schema"""
+    """Get database connection"""
     db = getattr(g, '_database', None)
     if db is None:
-        # Ensure database is initialized
         init_db()
         db = g._database = sqlite3.connect(DATABASE)
         db.row_factory = sqlite3.Row
@@ -58,29 +42,22 @@ def get_db():
 
 @app.teardown_appcontext
 def close_connection(exception):
-    """Close database connection at the end of request"""
+    """Close database connection"""
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
 
-def count_visitor():
-    """Record a new visitor and return total count"""
+def increment_counter():
+    """Increment visitor counter"""
     db = get_db()
-    ip_address = request.remote_addr
-    
-    # Only count if IP hasn't visited in the last 24 hours
-    existing = db.execute(
-        "SELECT 1 FROM visitors WHERE ip_address = ? AND timestamp > datetime('now', '-1 day')",
-        (ip_address,)
-    ).fetchone()
-    
-    if not existing:
-        db.execute(
-            "INSERT INTO visitors (ip_address) VALUES (?)",
-            (ip_address,)
-        )
-        db.commit()
-    return db.execute("SELECT COUNT(*) FROM visitors").fetchone()[0]
+    db.execute("UPDATE visitor_count SET count = count + 1")
+    db.commit()
+    return db.execute("SELECT count FROM visitor_count").fetchone()[0]
+
+def get_count():
+    """Get current visitor count"""
+    db = get_db()
+    return db.execute("SELECT count FROM visitor_count").fetchone()[0]
 
 # System prompt configuration
 DEFAULT_SYSTEM_PROMPT = """You are a helpful AI assistant. Follow these guidelines:
@@ -94,15 +71,13 @@ bot._add_system_message(DEFAULT_SYSTEM_PROMPT)
 @app.route('/')
 def index():
     """Serve the chat interface with visitor count"""
-    visitor_count = count_visitor()
+    visitor_count = increment_counter()
     return render_template('index.html', visitor_count=visitor_count)
 
 @app.route('/api/visitors', methods=['GET'])
 def get_visitors():
     """API endpoint to get current visitor count"""
-    db = get_db()
-    count = db.execute("SELECT COUNT(*) FROM visitors").fetchone()[0]
-    return jsonify({"count": count})
+    return jsonify({"count": get_count()})
 
 @app.route('/api/chat', methods=['POST'])
 def handle_chat():
